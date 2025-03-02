@@ -154,21 +154,35 @@ class _ProductListScreenState extends State<ProductListScreen> {
     ];
   }
 
-  List<Bid> _generateRandomBids(double startPrice) {
-    final random = Random();
-    final bids = <Bid>[];
-    double currentPrice = startPrice * 0.8; // Start from 80% of current price
+ List<Bid> _generateRandomBids(double currentPrice) {
+  final random = Random();
+  final bids = <Bid>[];
+  double price = currentPrice * 0.8; // Start from 80% of current price
+  DateTime time = DateTime.now().subtract(Duration(minutes: random.nextInt(60))); // Oldest bid starts in the past
 
-    for (int i = 0; i < random.nextInt(5) + 3; i++) {
-      currentPrice += random.nextDouble() * 1000;
-      bids.add(Bid(
-        bidder: _randomBidders[random.nextInt(_randomBidders.length)],
-        amount: currentPrice,
-        time: DateTime.now().subtract(Duration(minutes: random.nextInt(60))),
-      ));
-    }
-    return bids..sort((a, b) => b.amount.compareTo(a.amount));
+  int bidCount = random.nextInt(5) + 3; // At least 3 bids
+
+  for (int i = 0; i < bidCount - 1; i++) { // Leave last bid for the exact current price
+    double increment = 100 + random.nextDouble() * 900; // Ensures at least +100 increase
+    price += increment;
+    time = time.add(Duration(minutes: random.nextInt(10) + 1)); // Ensures increasing time
+
+    bids.add(Bid(
+      bidder: _randomBidders[random.nextInt(_randomBidders.length)],
+      amount: price,
+      time: time,
+    ));
   }
+
+  // Add the last bid with the exact current price and the latest time
+  bids.add(Bid(
+    bidder: _randomBidders[random.nextInt(_randomBidders.length)],
+    amount: currentPrice,
+    time: time.add(Duration(minutes: random.nextInt(10) + 1)),
+  ));
+   var sonlist=bids.reversed.toList();
+  return sonlist;
+}
 
   void _startTimer(Product product) {
     product.timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -232,7 +246,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 final bid = product.bidHistory[index];
                 return ListTile(
                   title: Text('${bid.bidder}: ₺${bid.amount.toStringAsFixed(2)}'),
-                  subtitle: Text('${bid.time.hour}:${bid.time.minute}'),
+                  subtitle: Text('${bid.time.hour}:${bid.time.minute.toString().padLeft(2, '0')}'),
                 );
               },
             ),
